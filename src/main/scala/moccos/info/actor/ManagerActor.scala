@@ -10,11 +10,11 @@ class ManagerActor extends Actor {
   var thread_history: Map[Int, List[Report]] = Map.empty
   var actor_history: Map[Int, List[Report]] = Map.empty
   println()
-  println("=== [Manager report] ===")
+  println("=== [Report] ===")
 
   private[this] def report(name: String, collection: Map[Int, List[Report]]) = {
     println()
-    println(s"=== [$name report] ===")
+    println(s"=== [Group by $name] ===")
 
     val keys = collection.keys.toList.sorted
     keys.foreach(key => {

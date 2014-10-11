@@ -36,7 +36,8 @@ object Behaviorcheck extends App {
     val conf_dispatcher = conf_akka.getConfig("default-dispatcher")
 
     val throughput = conf_dispatcher.getInt("throughput")
-    println("throughput: " + throughput)
+    val deadline = conf_dispatcher.getString("throughput-deadline-time")
+    println(s"throughput: $throughput, deadline: $deadline")
 
     val factor = conf_dispatcher.getDouble("fork-join-executor.parallelism-factor")
     val min = conf_dispatcher.getDouble("fork-join-executor.parallelism-min")
@@ -54,6 +55,7 @@ object Behaviorcheck extends App {
     println()
     println("Optional arguments (Akka default-dispatcher):")
     println("\t-at #   : <akka> throughput")
+    println("\t-atd #  : <akka> throughput-deadline-time")
     println("\t-apf #  : <akka> parallelism-factor")
     println("\t-apmin #: <akka> parallelism-min")
     println("\t-apmax #: <akka> parallelism-max")
@@ -69,46 +71,47 @@ object Behaviorcheck extends App {
   def parseOption(args: List[String], conf: Config): (List[String], Config) = args match {
     case ("-a" | "--actor") :: n :: xs =>
       allCatch opt n.toInt match {
-        case None =>
-        case Some(nn) => nr_actor = nn
+        case Some(x) if x > 0 => nr_actor = x
+        case _ => parseOption(xs, conf)
       }
       parseOption(xs, conf)
     case ("-n") :: n :: xs =>
       allCatch opt n.toInt match {
-        case None =>
-        case Some(nn) => nr_message = nn
+        case Some(x) if x > 0 => nr_message = x
+        case _ => parseOption(xs, conf)
       }
       parseOption(xs, conf)
     case ("-w") :: n :: xs =>
       allCatch opt n.toInt match {
-        case None =>
-        case Some(nn) if nn > 0 => computation_weight = nn
-        case _ =>
+        case Some(x) if x > 0 => computation_weight = x
+        case _ => parseOption(xs, conf)
       }
       parseOption(xs, conf)
     case ("-at") :: n :: xs =>
       allCatch opt n.toInt match {
-        case None => parseOption(xs, conf)
-        case Some(_) =>
+        case Some(x) if x > 0 =>
           parseOption(xs, overwriteConfig("throughput", n, conf))
+        case _ => parseOption(xs, conf)
       }
+    case ("-atd") :: n :: xs =>
+      parseOption(xs, overwriteConfig("throughput-deadline-time", n, conf))
     case ("-apf") :: n :: xs =>
       allCatch opt n.toFloat match {
-        case None => parseOption(xs, conf)
-        case Some(_) =>
+        case Some(x) if x > 0.0 =>
           parseOption(xs, overwriteConfig("fork-join-executor.parallelism-factor", n, conf))
+        case _ => parseOption(xs, conf)
       }
     case ("-apmin") :: n :: xs =>
-      allCatch opt n.toFloat match {
-        case None => parseOption(xs, conf)
-        case Some(_) =>
+      allCatch opt n.toInt match {
+        case Some(x) if x > 0 =>
           parseOption(xs, overwriteConfig("fork-join-executor.parallelism-min", n, conf))
+        case _ => parseOption(xs, conf)
       }
     case ("-apmax") :: n :: xs =>
-      allCatch opt n.toFloat match {
-        case None => parseOption(xs, conf)
-        case Some(_) =>
+      allCatch opt n.toInt match {
+        case Some(x) if x > 0 =>
           parseOption(xs, overwriteConfig("fork-join-executor.parallelism-max", n, conf))
+        case None => parseOption(xs, conf)
       }
     case ("-h" | "--help") :: _ =>
       printUsage()
